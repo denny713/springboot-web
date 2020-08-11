@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guest Books</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/layout.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/bootstrap-theme.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/dataTables.bootstrap.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/font-awesome.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/jquery-ui.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/new-style.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/select.dataTables.min.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/style.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/style-fix.css}" rel="stylesheet" type="text/css"></link>
+    <link th:href="@{/css/sweetalert2.css}" rel="stylesheet" type="text/css"></link>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-12">
+            <fieldset>
+                <legend>Guest Book</legend>
+                <table>
+                    <tr>
+                        <td style="width: 200px; color: black">
+                            Name
+                        </td>
+                        <td>
+                            <input style="width: 150px; text-align: left" class="k-textbox" type="text" name="name"
+                                   id="name" placeholder="Enter Your Name" maxlength="50"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px; color: black">
+                            Address
+                        </td>
+                        <td>
+                            <input style="width: 150px; text-align: left" class="k-textbox" type="text" name="address"
+                                   id="address" placeholder="Enter Your Address" maxlength="100"/>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+        </div>
+        <div class="col-xs-12">
+            <input type="button" value="Save" style="width: 100px; color: black" onclick="save()"/>
+        </div>
+        <input type="hidden" id="cek" name="cek">
+    </div>
+    <div class="modal" id="loading" data-backdrop="static" data-keyboard="false" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content" style="width: 295px;background: fixed">
+                <div class="modal-header">
+                    <h4>
+                        <b>
+                            Loading...
+                        </b>
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <img th:src="@{/img/loader.gif}" style="position: relative;width: 250px">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" th:src="@{/js/jquery-3.1.0.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/bootstrap.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/dataTables.bootstrap.js}"></script>
+    <script type="text/javascript" th:src="@{/js/dataTables.select.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/jquery-ui.js}"></script>
+    <script type="text/javascript" th:src="@{/js/jquery.dataTables.js}"></script>
+    <script type="text/javascript" th:src="@{/js/sweetalert2.all.js}"></script>
+    <script type="text/javascript" th:src="@{/js/util.js}"></script>
+    <script>
+
+        $(document).ready(function () {
+            var url = window.location.href;
+            var params = url.split('?');
+            try {
+                var param = params[1];
+                param = param.replace("name=", "");
+                $.ajax({
+                    type: "GET",
+                    url: '/guest/detail?id=' + param,
+                    dataType: "json",
+                    beforeSend: function () {
+                        showLoader();
+                    },
+                    success: function (data) {
+                        if (data !== null) {
+                            $("#name").val(data.name);
+                            $("#address").val(data.address);
+                            $("#cek").val("X");
+                        }
+                        hideLoader();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        hideLoader();
+                        console.log("Error : " + textStatus + " : " + errorThrown);
+                    }
+                });
+            } catch (e) {
+                console.log(e);
+            }
+        });
+
+        function save() {
+            var name = $("#name").val();
+            var address = $("#address").val();
+            if (name === "" || name === null) {
+                showAlert('warning', "Please Insert Name");
+            } else if (address === "" || address === null) {
+                showAlert('warning', "Please Insert Address");
+            } else {
+                var url = '';
+                var cek = $("#cek").val();
+                if (cek === "X") {
+                    url = '/guest/update/action';
+                } else {
+                    url = '/guest/create/action';
+                }
+                var data = {};
+                data["name"] = name;
+                data["address"] = address;
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    dataType: 'json',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json; charset=utf-8',
+                    cache: false,
+                    timeout: 600000,
+                    beforeSend: function () {
+                        showLoader();
+                    },
+                    success: function (cdata) {
+                        if (cdata.result === true) {
+                            showAlert('success', "Save " + cdata.message, function () {
+                                window.location = '/guest/browse';
+                            });
+                        } else {
+                            showAlert('error', "Save Failed : " + cdata.message);
+                        }
+                        hideLoader();
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        hideLoader();
+                        showAlert('error', "Error : " + textStatus + " : " + errorThrown);
+                    }
+                });
+            }
+        }
+    </script>
+</div>
+</body>
+</html>
